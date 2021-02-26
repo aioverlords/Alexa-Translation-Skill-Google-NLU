@@ -1,0 +1,345 @@
+const Alexa = require('ask-sdk-core');
+const https = require('https');
+
+var options = "";
+
+function httpGet(data) {
+
+    var dataOptions = data;
+
+    return new Promise(function (resolve, reject) {
+
+        var payload = JSON.stringify(dataOptions);
+
+        console.log("Alexa Request Payload:");
+        console.log(payload);
+
+        var options = {
+            host: 'us-central1-macgyver-services-production.cloudfunctions.net',
+            port: 443,
+            path: '/NLU_TRANSLATION',
+            method: 'POST',
+            timeout: 60000,
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': payload.length
+            }
+        };
+
+        var req = https.request(options, res => {
+            res.setEncoding('utf8');
+            var responseString = "";
+
+            //accept incoming data asynchronously
+            res.on('data', chunk => {
+                responseString = responseString + chunk;
+            });
+
+            //return the data when streaming is complete
+            res.on('end', () => {
+                console.log("Cloud Function Response: " + responseString);
+                resolve(JSON.parse(responseString));
+            });
+
+        });
+        req.write(payload);
+        req.end();
+    });
+}
+
+
+
+const LaunchRequestHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
+    },
+    handle(handlerInput) {
+        // const speakOutput = 'Welcome to Babel App.';
+        const speakOutput = "<speak>Hello, welcome to Babel app. To run a translation. Just say, translate followed by the word or phrase you want to translate.</speak>";
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+
+
+const SelectLanguageIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'select_language';
+    },
+    async handle(handlerInput) {
+
+        // var text = handlerInput.requestEnvelope.request.intent.slots.language.slotValue.value;
+
+        console.log(JSON.stringify(handlerInput.requestEnvelope));
+
+        var speakOutput = "test";
+
+        var target_language = handlerInput.requestEnvelope.request.intent.slots.language.value;
+
+
+        var userID = handlerInput.requestEnvelope.session.sessionId.match(/[^\.]+/gi)[3];
+        userID = "test-script";
+
+        if (/confirmed/gi.test(handlerInput.requestEnvelope.request.intent.confirmationStatus)) {
+
+            options = {
+                "action": "set-language",
+                "language": target_language,
+                "alexa_username": userID
+            };
+
+            var resURL = await httpGet(options);
+
+            speakOutput = "Confirmed. Translation language is now set to " + handlerInput.requestEnvelope.request.intent.slots.language.value;
+
+        }
+
+
+        console.log(speakOutput);
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            // .reprompt(reprompt)
+            .getResponse();
+
+    }
+};
+
+
+
+const TranslateIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'translate';
+    },
+    async handle(handlerInput) {
+
+
+        console.log(JSON.stringify(handlerInput));
+
+
+        var userID = handlerInput.requestEnvelope.session.sessionId.match(/[^\.]+/gi)[3];
+        userID = "test-script";
+
+        console.log("User ID: " + userID);
+
+
+        var text = handlerInput.requestEnvelope.request.intent.slots.text.slotValue.value;
+
+        console.log("Translation Text:" + text);
+
+        options = {
+            "action": "translate",
+            "text": text,
+            "gender": "NEUTRAL",
+            "alexa_username": userID
+        };
+
+        var resURL = await httpGet(options);
+
+        if (/no.language/gi.test(JSON.stringify(resURL))) {
+
+            return handlerInput.responseBuilder
+                .speak("You need to select a target language. To change the language to Spanish, just say Change language to Spanish.")
+                .reprompt("You need to select a target language. To change the language to Spanish, just say Change language to Spanish.")
+                .getResponse();
+
+
+        }
+
+        var speakOutput = '<audio src="' + resURL.audio_url + '" />';
+        // speakOutput = '<audio src="https://storage.googleapis.com/alexa-translation/1600944923205.mp3" />';
+
+        console.log(speakOutput);
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+
+
+    }
+};
+
+
+
+
+const HelpIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
+    },
+    handle(handlerInput) {
+        const speakOutput = 'You can say hello to me! How can I help?';
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+const CancelAndStopIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent' ||
+                Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
+    },
+    handle(handlerInput) {
+        const speakOutput = 'Goodbye!';
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .getResponse();
+    }
+};
+
+
+
+
+
+
+const WhatCanIBuyIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'WhatCanIBuyIntent';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const speakOutput = `You can purchase Babel premium with unlimited queries. Just say, purchase Unlimited Queries.`;
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+
+const BuyIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'BuyIntent';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const speakOutput = `You have successfully purchased Unlimited Queries.`;
+
+        return handlerInput.responseBuilder
+            .addDirective({
+                type: "Connections.SendRequest",
+                name: "Buy",
+                payload: {
+                    InSkillProduct: {
+                        productId: "amzn1.adg.product.841ec3fd-bbf2-49ba-898c-3757f2172080",
+                    }
+                },
+                token: "correlationToken"
+            })
+            .speak(speakOutput)
+            .getResponse();
+    }
+};
+
+
+
+const CancelSubscriptionIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'CancelPurchaseIntent';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const speakOutput = `Your purchase has been cancelled.`;
+
+        return handlerInput.responseBuilder
+            .addDirective({
+                type: 'Connections.SendRequest',
+                name: 'Cancel',
+                payload: {
+                    InSkillProduct: {
+                        productId: "amzn1.adg.product.841ec3fd-bbf2-49ba-898c-3757f2172080",
+                    }
+                },
+                token: "correlationToken"
+            })
+            .speak(speakOutput)
+            .getResponse();
+
+    }
+};
+
+
+const SessionEndedHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest' ||
+            (handlerInput.requestEnvelope.request.type === 'IntentRequest' && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.StopIntent') ||
+            (handlerInput.requestEnvelope.request.type === 'IntentRequest' && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.CancelIntent');
+    },
+    handle(handlerInput) {
+        console.log('IN: SessionEndedHandler.handle');
+
+        return handlerInput.responseBuilder
+            .speak("Goodbye")
+            .getResponse();
+    },
+};
+
+
+
+// Generic error handling to capture any syntax or routing errors. If you receive an error
+// stating the request handler chain is not found, you have not implemented a handler for
+// the intent being invoked or included it in the skill builder below.
+const ErrorHandler = {
+    canHandle(handlerInput) {
+        console.log(handlerInput.requestEnvelope.request);
+        return true;
+    },
+    handle(handlerInput, error) {
+        console.log(`~~~~ Error handled: ${error.stack}`);
+        const speakOutput = `Sorry, I had trouble doing what you asked. Please try again.`;
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+
+// THIS HANDLES THE CONNECTIONS.RESPONSE EVENT AFTER A CANCEL OCCURS.
+const CancelResponseHandler = {
+    canHandle(handlerInput) {
+        console.log(handlerInput.requestEnvelope.request);
+        return handlerInput.requestEnvelope.request.type === 'Connections.Response';
+    },
+    handle(handlerInput) {
+        console.log('IN: CancelResponseHandler.handle');
+
+        return handlerInput.responseBuilder
+            .speak('Your purchase has been cancelled.')
+            .getResponse();
+
+    }
+};
+
+
+exports.handler = Alexa.SkillBuilders.custom()
+    .addRequestHandlers(
+        LaunchRequestHandler,
+        HelpIntentHandler,
+        TranslateIntentHandler,
+        WhatCanIBuyIntentHandler,
+        BuyIntentHandler,
+        SelectLanguageIntentHandler,
+        SessionEndedHandler,
+        CancelAndStopIntentHandler,
+        CancelSubscriptionIntentHandler,
+        CancelResponseHandler
+    )
+    .addErrorHandlers(
+        ErrorHandler,
+    )
+    .lambda();

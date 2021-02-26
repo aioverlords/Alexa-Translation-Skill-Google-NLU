@@ -1,0 +1,5 @@
+npx @google-cloud/functions-framework --target=helloWorld
+
+
+
+gcloud datastore indexes create ./index.yaml

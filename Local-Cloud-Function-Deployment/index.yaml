@@ -1,0 +1,7 @@
+indexes:
+
+- kind: Babel App Alexa User Language Selection
+  properties:
+  - name: username
+  - name: timestamp
+    direction: desc

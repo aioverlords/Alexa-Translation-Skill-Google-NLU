@@ -1,0 +1,99 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "en-US": {
+          "summary": "Translate a word or sentence from English to multiple languages.",
+          "examplePhrases": [
+            "Alexa ask my interpreter to translate hello",
+            "Alexa ask my interpreter to change language to spanish",
+            "Alexa open my interpreter"
+          ],
+          "keywords": [
+            "translation",
+            "translate",
+            "language",
+            "chinese",
+            "multilingual",
+            "speech",
+            "text",
+            "phrases",
+            "words",
+            "translated",
+            "tutor",
+            "learn",
+            "spanish",
+            "translator",
+            "google",
+            "dictionary",
+            "thai",
+            "english",
+            "german",
+            "korean",
+            "phrase",
+            "speech",
+            "italian",
+            "language",
+            "lingual",
+            "transcribe",
+            "dialect",
+            "voice",
+            "speak",
+            "verb"
+          ],
+          "name": "My Interpreter",
+          "description": "My Interpreter can dynamically translate text between hundreds of language pairs. Select a target language and pass a word or sentence to return a translated dictation of that text. My Interpreter uses both a translation model as well as a generative voice synthesis model to emulate human-like voice dictation reflecting proper accent and intonation.\n\nSupported Languages: Arabic, Hindi, Italian, French, German, Japanese, Chinese, Portuguese, Russian, Thai, Spanish\n\nUsage Directions:\n\nLaunch: \"Alexa open my interpreter.\"\n\nSelect Language: \"Change language to _target_language_.\"\nExample: \"Change language to Thai.\"\n\nRun Translation: \"Translate _word_or_phrase_.\"\nExample: \"Translate How are you?\"\n\nThe application will remember your target language but it can also be changed at any time.",
+          "smallIconUri": "file://assets/images/en-US_smallIconUri.png",
+          "largeIconUri": "file://assets/images/en-US_largeIconUri.png"
+        }
+      },
+      "automaticDistribution": {
+        "isActive": false
+      },
+      "isAvailableWorldwide": true,
+      "testingInstructions": "*I only edited the privacy policy and icons, code is the same.\n\nSample Testing Instructions.\n\nOpen the application: Alexa open my interpreter.\nRun a Translation: Translate Hello\nChange Target Language: Change Language to Spanish\nUpgrade to Unlimited Queries: Purchase Unlimited Queries\n\nYou can do one shot queries.\nAlexa ask my interpreter to translate How Are you?\nAlexa ask my interpreter to change language to Spanish\n\nOr you can open the app and interact.",
+      "category": "EDUCATION_AND_REFERENCE",
+      "distributionMode": "PUBLIC",
+      "distributionCountries": []
+    },
+    "apis": {
+      "custom": {
+        "endpoint": {
+          "uri": "arn:aws:lambda:us-east-1:029334721071:function:a1b7ba45-a309-4cc5-98a3-28ba10381236:Release_1"
+        },
+        "interfaces": [],
+        "regions": {
+          "EU": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:eu-west-1:029334721071:function:a1b7ba45-a309-4cc5-98a3-28ba10381236:Release_1"
+            }
+          },
+          "NA": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:us-east-1:029334721071:function:a1b7ba45-a309-4cc5-98a3-28ba10381236:Release_1"
+            }
+          },
+          "FE": {
+            "endpoint": {
+              "uri": "arn:aws:lambda:us-west-2:029334721071:function:a1b7ba45-a309-4cc5-98a3-28ba10381236:Release_1"
+            }
+          }
+        }
+      }
+    },
+    "manifestVersion": "1.0",
+    "privacyAndCompliance": {
+      "allowsPurchases": true,
+      "locales": {
+        "en-US": {
+          "termsOfUseUrl": "https://my-interpreter.webflow.io/",
+          "privacyPolicyUrl": "https://my-interpreter.webflow.io/"
+        }
+      },
+      "containsAds": false,
+      "isExportCompliant": true,
+      "isChildDirected": false,
+      "usesPersonalInfo": false
+    }
+  }
+}

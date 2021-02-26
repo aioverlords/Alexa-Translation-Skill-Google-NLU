@@ -1,0 +1,289 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "my interpreter",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "translate",
+          "slots": [
+            {
+              "name": "text",
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "{text}"
+              ]
+            },
+            {
+              "name": "language",
+              "type": "supported_languages"
+            }
+          ],
+          "samples": [
+            "translate {text}"
+          ]
+        },
+        {
+          "name": "select_language",
+          "slots": [
+            {
+              "name": "language",
+              "type": "supported_languages",
+              "samples": [
+                "{language}"
+              ],
+              "multipleValues": {
+                "enabled": false
+              }
+            }
+          ],
+          "samples": [
+            "change language to {language}",
+            "change the language to {language}",
+            "Translate to {language}",
+            "Choose {language}"
+          ]
+        },
+        {
+          "name": "WhatCanIBuyIntent",
+          "slots": [],
+          "samples": [
+            "can I buy",
+            "can I buy more",
+            "list products",
+            "what can I purchase",
+            "shop",
+            "buy",
+            "what can I shop for",
+            "what can I buy"
+          ]
+        },
+        {
+          "name": "BuyIntent",
+          "slots": [],
+          "samples": [
+            "extra translations",
+            "Purchase unlimited translations",
+            "Purchase Unlimited Queries.",
+            "Buy extra queries.",
+            "Upgrade to premium.",
+            "Upgrade to unlimited queries."
+          ]
+        },
+        {
+          "name": "ListLanguagesIntent",
+          "slots": [],
+          "samples": [
+            "languages",
+            "List languages",
+            "Which languages",
+            "What languages are supported",
+            "What languages"
+          ]
+        },
+        {
+          "name": "Help",
+          "slots": [],
+          "samples": [
+            "How do I use",
+            "What can I say",
+            "Help",
+            "How do I",
+            "How do I translate"
+          ]
+        },
+        {
+          "name": "CancelPurchaseIntent",
+          "slots": [],
+          "samples": [
+            "refund my purchase",
+            "refund unlimited queries",
+            "cancel purchase",
+            "cancel subscription",
+            "refund Unlimited Translation",
+            "refund"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "english"
+              }
+            },
+            {
+              "name": {
+                "value": "korean"
+              }
+            },
+            {
+              "name": {
+                "value": "arabic"
+              }
+            },
+            {
+              "name": {
+                "value": "hindi"
+              }
+            },
+            {
+              "name": {
+                "value": "italian"
+              }
+            },
+            {
+              "name": {
+                "value": "french"
+              }
+            },
+            {
+              "name": {
+                "value": "german"
+              }
+            },
+            {
+              "name": {
+                "value": "japanese"
+              }
+            },
+            {
+              "name": {
+                "value": "chinese",
+                "synonyms": [
+                  "mandarin"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "portuguese"
+              }
+            },
+            {
+              "name": {
+                "value": "russian"
+              }
+            },
+            {
+              "name": {
+                "value": "thai"
+              }
+            },
+            {
+              "name": {
+                "value": "spanish"
+              }
+            }
+          ],
+          "name": "supported_languages"
+        }
+      ]
+    },
+    "dialog": {
+      "intents": [
+        {
+          "name": "select_language",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "language",
+              "type": "supported_languages",
+              "elicitationRequired": true,
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.558852855505.918138104664"
+              },
+              "validations": [
+                {
+                  "type": "hasEntityResolutionMatch",
+                  "prompt": "Slot.Validation.558852855505.918138104664.729559100119"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "translate",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "text",
+              "type": "AMAZON.SearchQuery",
+              "elicitationRequired": true,
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.1450451071022.967755691948"
+              }
+            },
+            {
+              "name": "language",
+              "type": "supported_languages",
+              "elicitationRequired": false,
+              "confirmationRequired": false,
+              "prompts": {}
+            }
+          ]
+        }
+      ],
+      "delegationStrategy": "ALWAYS"
+    },
+    "prompts": [
+      {
+        "id": "Slot.Validation.558852855505.918138104664.729559100119",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "That is not a valid language, please request a valid language."
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.558852855505.918138104664",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Please provide a valid and supported language to change to."
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1399447703696.366819480351",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What word or phrase would you like to translate?"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1450451071022.967755691948",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "What word or phrase would you like to translate?"
+          }
+        ]
+      }
+    ]
+  },
+  "version": "45"
+}

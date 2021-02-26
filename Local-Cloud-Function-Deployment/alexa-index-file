@@ -1,0 +1,416 @@
+const Alexa = require('ask-sdk-core');
+const https = require('https');
+
+var options = "";
+
+
+
+async function upgradeUser(user) {
+    console.log("upgrading user");
+    options = {
+        "action": "upgrade-user",
+        "alexa_username": user
+    };
+    var resURL = await httpGet(options);
+    console.log(resURL);
+}
+
+
+function httpGet(data) {
+
+    var dataOptions = data;
+
+    return new Promise(function (resolve, reject) {
+
+        var payload = JSON.stringify(dataOptions);
+
+        console.log("Alexa Request Payload:");
+        console.log(payload);
+
+        var options = {
+            host: 'us-central1-macgyver-services-production.cloudfunctions.net',
+            port: 443,
+            path: '/NLU_TRANSLATION',
+            method: 'POST',
+            timeout: 6e3,
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': payload.length
+            }
+        };
+
+        var req = https.request(options, res => {
+            res.setEncoding('utf8');
+            var responseString = "";
+
+            res.on('data', chunk => {
+                responseString = responseString + chunk;
+            });
+
+            res.on('end', () => {
+                console.log(`Cloud Function Response: ${responseString}`);
+
+                if (/exceed/gi.test(responseString)) {
+                    resolve(responseString);
+                } else if (/error/gi.test(responseString)) {
+                    resolve("Hmmm, I had trouble with that translation. Please try again.");
+                } else {
+                    resolve(JSON.parse(responseString));
+                }
+            });
+        });
+
+        req.on('timeout', () => {
+            console.log("Cloud Function Has TIMED OUT / Request ABORTED")
+            resolve("Hmmm, I had trouble with that translation. Please try again.");
+        });
+
+        req.write(payload);
+        req.end();
+    });
+}
+
+
+
+const LaunchRequestHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
+    },
+    async handle(handlerInput) {
+
+        console.log(handlerInput.requestEnvelope);
+
+        const speakOutput = "<speak>Hello, welcome to my interpreter. To run a translation. Just say, translate followed by the word or phrase you want to translate. To select a target language just say, change language to Spanish.</speak>";
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+
+const BuyResponseHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'Connections.Response' &&
+            (handlerInput.requestEnvelope.request.name === 'Buy' ||
+                handlerInput.requestEnvelope.request.name === 'Upsell');
+    },
+    async handle(handlerInput) {
+
+        console.log(handlerInput.requestEnvelope.request.payload.purchaseResult);
+        console.log("Buy Response Handler");
+
+
+        var userID = handlerInput.requestEnvelope.session.user.userId.match(/[^\.]+/gi)[3];
+        // userID = "test-script";
+
+        if (/accept/gi.test(handlerInput.requestEnvelope.request.payload.purchaseResult)) {
+
+            console.log("Successful purchase");
+
+            await upgradeUser(userID);
+
+            return handlerInput.responseBuilder
+                .speak("You have successfully upgraded to Unlimited Translations. Feel free to run a new translation.")
+                .reprompt("You have successfully upgraded to Unlimited Translations. Feel free to run a new translation.")
+                .getResponse();
+
+        } else if (/already/gi.test(handlerInput.requestEnvelope.request.payload.purchaseResult)) {
+
+            await upgradeUser(userID);
+
+            return handlerInput.responseBuilder
+                .speak("You already have unlimited Translations. Feel free to run a translation.")
+                .reprompt("You already have unlimited Translations. Feel free to run a translation.")
+                .getResponse();
+
+        }
+    }
+};
+
+
+
+const SelectLanguageIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'select_language';
+    },
+    async handle(handlerInput) {
+
+        // var text = handlerInput.requestEnvelope.request.intent.slots.language.slotValue.value;
+
+        console.log(JSON.stringify(handlerInput.requestEnvelope));
+
+        var speakOutput = "Sorry I was unable to change the language, please try again.";
+        var target_language = handlerInput.requestEnvelope.request.intent.slots.language.value;
+        var userID = handlerInput.requestEnvelope.session.user.userId.match(/[^\.]+/gi)[3];
+        // userID = "test-script";
+
+        options = {
+            "action": "set-language",
+            "target_language": target_language,
+            "alexa_username": userID
+        };
+
+        var resURL = await httpGet(options);
+
+        speakOutput = `Language is now set to ${handlerInput.requestEnvelope.request.intent.slots.language.value}`;
+
+        console.log(speakOutput);
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+
+    }
+};
+
+
+
+const TranslateIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'translate';
+    },
+    async handle(handlerInput) {
+
+        console.log(JSON.stringify(handlerInput));
+
+        var userID = handlerInput.requestEnvelope.session.user.userId.match(/[^\.]+/gi)[3];
+        // userID = "test-script";
+        console.log(`User ID: ${userID}`);
+
+        // var text = handlerInput.requestEnvelope.request.intent.slots.text.slotValue.value;
+
+        var text = handlerInput.requestEnvelope.request.intent.slots.text.value;
+        console.log(`Translation Text: ${text}`);
+
+        options = {
+            "action": "translate",
+            "text": text,
+            "gender": "NEUTRAL",
+            "alexa_username": userID
+        };
+
+        var resURL = await httpGet(options);
+
+        console.log(resURL);
+
+        var speakOutput = "";
+
+        console.log(JSON.stringify(resURL));
+
+        if (/exceed/gi.test(JSON.stringify(resURL))) {
+
+            speakOutput = "Sorry, you have exceeded the maximum limit of 5 Translations per day. To upgrade to unlimited Translations just say, purchase Unlimited Translations.";
+        } else if (/hmm/gi.test(resURL)) {
+
+            speakOutput = resURL;
+        } else if (/no.language/gi.test(JSON.stringify(resURL))) {
+            return handlerInput.responseBuilder
+                .speak("First, you need to select a target language. To change the language to Spanish, just say Change language to Spanish.")
+                .reprompt("First, you need to select a target language. To change the language to Spanish, just say Change language to Spanish.")
+                .getResponse();
+        } else if (/audio_url/gi.test(JSON.stringify(resURL))) {
+            speakOutput = `<audio src="${resURL.audio_url}" />`;
+        }
+
+        console.log(speakOutput);
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt("To run another translation say translate followed by the word or phrase you want to translate.")
+            .getResponse();
+
+    }
+};
+
+
+
+const CancelAndStopIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent' ||
+                Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
+    },
+    handle(handlerInput) {
+        const speakOutput = 'Goodbye!';
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .getResponse();
+    }
+};
+
+
+
+
+const ListLanguagesIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'ListLanguagesIntent';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const speakOutput = `This application supports translation for the following languages. arabic, hindi, italian, french, german, japanese, chinese, portuguese, russian, thai, and spanish`;
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+
+
+
+const HelpIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'Help';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const speakOutput = `<speak>Hello, welcome to my interpreter. To run a translation. Just say, 
+        translate followed by the word or phrase you want to translate. To select a target language just say, change language to Spanish. 
+        You will be allowed to make five translations each day. To upgrade to unlimited translations, just say purchase unlimited Translations.</speak>`;
+
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+};
+
+
+
+
+const WhatCanIBuyIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'WhatCanIBuyIntent';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const speakOutput = `You can purchase my interpreter premium with unlimited Translations. Just say, purchase Unlimited Translations.`;
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+};
+
+
+const BuyIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'BuyIntent';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        //  const speakOutput = `You have successfully purchased Unlimited Translations.`;
+
+        return handlerInput.responseBuilder
+            .addDirective({
+                type: "Connections.SendRequest",
+                name: "Buy",
+                payload: {
+                    InSkillProduct: {
+                        productId: "amzn1.adg.product.841ec3fd-bbf2-49ba-898c-3757f2172080",
+                    }
+                },
+                token: "correlationToken"
+            })
+            //.speak(speakOutput)
+            .getResponse();
+    }
+};
+
+
+
+const CancelSubscriptionIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+            Alexa.getIntentName(handlerInput.requestEnvelope) === 'CancelPurchaseIntent';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const speakOutput = `Your purchase has been cancelled.`;
+
+        return handlerInput.responseBuilder
+            .addDirective({
+                type: 'Connections.SendRequest',
+                name: 'Cancel',
+                payload: {
+                    InSkillProduct: {
+                        productId: "amzn1.adg.product.841ec3fd-bbf2-49ba-898c-3757f2172080",
+                    }
+                },
+                token: "correlationToken"
+            })
+            .speak(speakOutput)
+            .getResponse();
+
+    }
+};
+
+
+const SessionEndedHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest' ||
+            (handlerInput.requestEnvelope.request.type === 'IntentRequest' && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.StopIntent') ||
+            (handlerInput.requestEnvelope.request.type === 'IntentRequest' && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.CancelIntent');
+    },
+    handle(handlerInput) {
+        console.log('IN: SessionEndedHandler.handle');
+
+        return handlerInput.responseBuilder
+            .speak("Goodbye")
+            .getResponse();
+    },
+};
+
+
+
+// Generic error handling to capture any syntax or routing errors. If you receive an error
+// stating the request handler chain is not found, you have not implemented a handler for
+// the intent being invoked or included it in the skill builder below.
+const ErrorHandler = {
+    canHandle(handlerInput) {
+        console.log(handlerInput.requestEnvelope.request);
+        return true;
+    },
+    handle(handlerInput, error) {
+        console.log(`~~~~ Error handled: ${error.stack}`);
+        const speakOutput = `Sorry, I had trouble doing what you asked. Please try again.`;
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+
+
+exports.handler = Alexa.SkillBuilders.custom()
+    .addRequestHandlers(
+        LaunchRequestHandler,
+        HelpIntentHandler,
+        TranslateIntentHandler,
+        WhatCanIBuyIntentHandler,
+        BuyIntentHandler,
+        BuyResponseHandler,
+        SelectLanguageIntentHandler,
+        SessionEndedHandler,
+        ListLanguagesIntentHandler,
+        CancelAndStopIntentHandler,
+        CancelSubscriptionIntentHandler
+    )
+    .withApiClient(new Alexa.DefaultApiClient())
+    .addErrorHandlers(
+        ErrorHandler,
+    )
+    .lambda();
