@@ -208,6 +208,11 @@ const SelectLanguageIntentHandler = {
 
 
 
+
+
+
+
+
 const TranslateIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
